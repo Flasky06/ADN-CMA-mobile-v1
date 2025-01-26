@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,27 +10,32 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { cmaLogo } from "@/constants/assets";
+import { AuthContext, AuthProvider } from "./createContext/AuthContext";
 
 const App = () => {
+  const { authData } = useContext(AuthContext);
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor="#0cc"
-        translucent={true}
-      />
-      <View style={styles.container}>
-        <Image source={cmaLogo} style={styles.logo} />
-        <Text style={styles.title}>CMA</Text>
-        <Text style={styles.subtitle}>Catholic Men's Association</Text>
-        <TouchableOpacity
-          onPress={() => router.push("/(auth)/login")}
-          style={styles.button}
-        >
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    <AuthProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="#0cc"
+          translucent={true}
+        />
+        <View style={styles.container}>
+          <Image source={cmaLogo} style={styles.logo} />
+          <Text style={styles.title}>CMA</Text>
+          <Text style={styles.subtitle}>Catholic Men's Association</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(auth)/login")}
+            style={styles.button}
+          >
+            <Text style={styles.buttonText}>Get Started</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    </AuthProvider>
   );
 };
 

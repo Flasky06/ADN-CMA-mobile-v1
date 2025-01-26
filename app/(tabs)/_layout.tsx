@@ -47,9 +47,9 @@ const TabLayout = () => {
       />
 
       <Tabs.Screen
-        name="profile"
+        name="logout"
         options={{
-          title: "Profile",
+          title: "logout",
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="person" size={size} color={color} />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   StyleSheet,
   Text,
@@ -9,50 +9,60 @@ import {
 } from "react-native";
 import axios from "axios";
 import { router } from "expo-router";
+import { AuthContext } from "../createContext/AuthContext";
 
-const Login = () => {
-  const [email, setEmail] = useState<string | null>(null);
-  const [password, setPassword] = useState<string | null>(null);
+const Login: React.FC = () => {
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false); // New state for loading
+
+  const { setAuthData, fetchUserProfile } = useContext(AuthContext);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      console.log("Please fill in both email and password."); // Log missing fields
-      Alert.alert("Error", "Please fill in both email and password."); // Show alert for missing fields
+      Alert.alert("Error", "Please fill in both email and password.");
       return;
     }
 
+    setIsLoading(true); // Set loading to true when the login request starts
+
     try {
-      const response = await axios.post(
-        "https://sbparish.or.ke/adncmatechnical/api/login",
-        {
-          email,
-          password,
-        }
-      );
+      const response = await axios.post<{
+        status: string;
+        data: {
+          token: string;
+          user: { id: string; email: string; name: string };
+        };
+        message?: string;
+      }>("https://sbparish.or.ke/adncmatechnical/api/login", {
+        email,
+        password,
+      });
 
       const responseData = response.data;
-      console.log("API Response:", responseData); // Log the full API response
 
       if (responseData.status === "success") {
-        console.log("Login successful:", responseData.message); // Log success message
-        router.replace("/home"); // Navigate to home screen
+        setAuthData({
+          token: responseData.data.token,
+          user: responseData.data.user,
+        });
+
+        // Fetch the user profile after setting the token
+        await fetchUserProfile();
+
+        router.replace("/home");
       } else {
-        console.log("Login failed:", responseData.message); // Log failure message
-        Alert.alert("Error", responseData.message); // Show alert with API error message
+        Alert.alert("Error", responseData.message || "Login failed");
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        // Handle Axios-specific errors
         const errorMessage = error.response?.data.message || "Network error";
-        console.log("Login failed:", errorMessage); // Log the error message
-        Alert.alert("Error", errorMessage); // Show alert with API error message
+        Alert.alert("Error", errorMessage);
       } else {
-        // Handle non-Axios errors
-        const errorMessage = "An unexpected error occurred. Please try again.";
-        console.log(errorMessage); // Log unexpected errors
-        Alert.alert("Error", errorMessage); // Show alert for unexpected errors
+        Alert.alert("Error", "An unexpected error occurred. Please try again.");
       }
-      console.error("Login error:", error); // Log the full error for debugging
+    } finally {
+      setIsLoading(false); // Reset loading state once the request completes
     }
   };
 
@@ -63,21 +73,27 @@ const Login = () => {
       <TextInput
         style={styles.input}
         placeholder="Email"
-        value={email || ""}
+        value={email}
         keyboardType="email-address"
-        onChangeText={(text) => setEmail(text)}
+        onChangeText={setEmail}
       />
 
       <TextInput
         style={styles.input}
         placeholder="Password"
         secureTextEntry
-        value={password || ""}
-        onChangeText={(text) => setPassword(text)}
+        value={password}
+        onChangeText={setPassword}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]} // Disable button while loading
+        onPress={handleLogin}
+        disabled={isLoading} // Disable button while loading
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? "Logging in..." : "Login"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -105,7 +121,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   button: {
-    backgroundColor: "#0ccc",
+    backgroundColor: "#00cccc",
     padding: 12,
     borderRadius: 8,
     marginTop: 20,
@@ -115,6 +131,9 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 18,
+  },
+  buttonDisabled: {
+    backgroundColor: "#999", // Darker shade to indicate it's disabled
   },
 });
 
