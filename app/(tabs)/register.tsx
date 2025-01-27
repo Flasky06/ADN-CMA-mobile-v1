@@ -6,48 +6,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-
-// Define the structure for the member data
-type Member = {
-  Regno: number;
-  Name: string;
-  IdNo: string;
-  StationCode: string;
-  Commissioned: string;
-  CommissionNo: string;
-  Status: string;
-  photo: string;
-  LithurgyStatus: string;
-  DeanCode: string;
-  Rpt: string;
-  CellNo: string;
-  Bapt: string;
-  Conf: string;
-  Euc: string;
-  Marr: string;
-  email: string;
-  parish_id: number;
-  created_at: string;
-  updated_at: string;
-};
+import { useMemberContext } from "../createContext/ParishMemberContext";
 
 const Register = () => {
-  const [members, setMembers] = useState<Member[]>([]);
+  const { members, fetchMembers } = useMemberContext(); // Access context
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch data from the API
+  // Fetch data from the API using the context
   useEffect(() => {
-    const fetchMembers = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch(
-          "https://sbparish.or.ke/adncmatechnical/api/parish/parish-members"
-        );
-        const data = await response.json();
-        if (data.status === "success") {
-          setMembers(data.data);
-        } else {
-          alert(data.message || "Failed to fetch members");
-        }
+        await fetchMembers(); // Use the fetchMembers function from context
       } catch (error) {
         console.error(error);
         alert("Something went wrong, please try again.");
@@ -56,8 +25,8 @@ const Register = () => {
       }
     };
 
-    fetchMembers(); // Call the function to fetch the members data
-  }, []); // Empty dependency array
+    loadData(); // Call the function to fetch the members data
+  }, [fetchMembers]); // Dependency on fetchMembers
 
   if (loading) {
     return (
@@ -128,7 +97,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 2,
   },
-
   header: {
     fontWeight: "bold",
     backgroundColor: "#0ccc",

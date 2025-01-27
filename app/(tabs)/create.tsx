@@ -8,9 +8,12 @@ import {
   ScrollView,
   StatusBar,
   Alert,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Checkbox from "expo-checkbox";
+import { MemberProvider } from "../createContext/ParishMemberContext";
 
 const Create: React.FC = () => {
   const [name, setName] = useState<string>("");
@@ -28,6 +31,7 @@ const Create: React.FC = () => {
   const [deaneries, setDeaneries] = useState<any[]>([]);
   const [selectedDeanery, setSelectedDeanery] = useState<string>("");
   const [parishes, setParishes] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Date Picker State
   const [selectedYear, setSelectedYear] = useState<string>("1950");
@@ -35,7 +39,9 @@ const Create: React.FC = () => {
   const [selectedDay, setSelectedDay] = useState<string>("01");
 
   // Generate years from 1950 to 2000
-  const years = Array.from({ length: 51 }, (_, i) => (1950 + i).toString());
+  const years = Array.from({ length: 2024 - 1950 + 1 }, (_, i) =>
+    (1950 + i).toString()
+  );
 
   // Months (1–12)
   const months = Array.from({ length: 12 }, (_, i) =>
@@ -70,8 +76,6 @@ const Create: React.FC = () => {
         }
 
         const text = await response.text();
-        console.log("Raw Response:", text);
-
         const data = JSON.parse(text);
         if (data.status === "success") {
           setDeaneries(data.data);
@@ -99,8 +103,6 @@ const Create: React.FC = () => {
           }
 
           const text = await response.text();
-          console.log("Raw Response:", text);
-
           const data = JSON.parse(text);
           if (data.status === "success") {
             setParishes(data.data);
@@ -118,6 +120,11 @@ const Create: React.FC = () => {
   }, [selectedDeanery]);
 
   const handleSubmit = async () => {
+    if (!name || !idNo || !cellNo) {
+      Alert.alert("Error", "Please fill in all required fields.");
+      return;
+    }
+
     const payload = {
       Name: name,
       IdNo: idNo,
@@ -140,6 +147,7 @@ const Create: React.FC = () => {
       parish_id: 6,
     };
 
+    setIsLoading(true);
     try {
       const response = await fetch(
         "https://sbparish.or.ke/adncmatechnical/api/parish/parish-members",
@@ -152,21 +160,11 @@ const Create: React.FC = () => {
         }
       );
 
-      const text = await response.text(); // Log the raw response
-      console.log("Raw Response (Submit):", text);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
+      const text = await response.text();
       const data = JSON.parse(text);
-      if (data.status === "success") {
-        Alert.alert(
-          "Success",
-          data.message || "Parish member created successfully"
-        );
-        console.log("Created Parish Member:", data.data);
 
+      if (response.ok && data.status === "success") {
+        Alert.alert("Success", "Parish member created successfully!");
         // Reset the form
         setName("");
         setIdNo("");
@@ -181,212 +179,235 @@ const Create: React.FC = () => {
         setEucChecked(false);
         setMarrChecked(false);
       } else {
-        Alert.alert(
-          "Error",
-          typeof data.message === "string"
-            ? data.message
-            : JSON.stringify(data.message || "Failed to register member")
-        );
+        Alert.alert("Error", data.message || "Failed to register member.");
       }
     } catch (error) {
-      Alert.alert("Error", "Something went wrong. Please try again.");
       console.error(error);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#0cc" translucent />
-        <View style={styles.container}>
-          <Text style={styles.title}>Register New Parish Member</Text>
+    <MemberProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <StatusBar
+            barStyle="dark-content"
+            backgroundColor="#0cc"
+            translucent
+          />
+          <View style={styles.container}>
+            <Text style={styles.title}>Register New Parish Member</Text>
 
-          {/* Deanery Picker */}
-          <View style={styles.div}>
-            <Text style={styles.label}>Deanery:</Text>
-            <Picker
-              selectedValue={selectedDeanery}
-              onValueChange={(itemValue) => setSelectedDeanery(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Deanery" value="" />
-              {deaneries.map((deanery) => (
-                <Picker.Item
-                  key={deanery.id}
-                  label={deanery.name}
-                  value={deanery.id}
-                />
-              ))}
-            </Picker>
-          </View>
-
-          {/* Parish Picker (Conditional Rendering) */}
-          {selectedDeanery && (
+            {/* Deanery Picker */}
             <View style={styles.div}>
-              <Text style={styles.label}>Parish:</Text>
+              <Text style={styles.label}>Deanery:</Text>
               <Picker
-                selectedValue={station}
-                onValueChange={(itemValue) => setStation(itemValue)}
+                selectedValue={selectedDeanery}
+                onValueChange={(itemValue) => setSelectedDeanery(itemValue)}
                 style={styles.picker}
               >
-                <Picker.Item label="Select Parish" value="" />
-                {parishes.map((parish) => (
+                <Picker.Item label="Select Deanery" value="" />
+                {deaneries.map((deanery) => (
                   <Picker.Item
-                    key={parish.id}
-                    label={parish.name}
-                    value={parish.code}
+                    key={deanery.id}
+                    label={deanery.name}
+                    value={deanery.id}
                   />
                 ))}
               </Picker>
             </View>
-          )}
 
-          <View style={styles.div}>
-            <Text style={styles.label}>Name:</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter full name"
-            />
-          </View>
+            {/* Parish Picker (Conditional Rendering) */}
+            {selectedDeanery && (
+              <View style={styles.div}>
+                <Text style={styles.label}>Parish:</Text>
+                <Picker
+                  selectedValue={station}
+                  onValueChange={(itemValue) => setStation(itemValue)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Select Parish" value="" />
+                  {parishes.map((parish) => (
+                    <Picker.Item
+                      key={parish.id}
+                      label={parish.name}
+                      value={parish.code}
+                    />
+                  ))}
+                </Picker>
+              </View>
+            )}
 
-          <View style={styles.div}>
-            <Text style={styles.label}>ID No:</Text>
-            <TextInput
-              style={styles.input}
-              value={idNo}
-              onChangeText={setIdNo}
-              placeholder="Enter ID number"
-              keyboardType="numeric"
-            />
-          </View>
-
-          {/* Select-Based Date Picker */}
-          <View style={styles.div}>
-            <Text style={styles.label}>Date of Birth:</Text>
-            <View style={styles.datePickerContainer}>
-              {/* Year Picker */}
-              <Picker
-                selectedValue={selectedYear}
-                onValueChange={(itemValue) => setSelectedYear(itemValue)}
-                style={styles.datePicker}
-              >
-                {years.map((year) => (
-                  <Picker.Item key={year} label={year} value={year} />
-                ))}
-              </Picker>
-
-              {/* Month Picker */}
-              <Picker
-                selectedValue={selectedMonth}
-                onValueChange={(itemValue) => setSelectedMonth(itemValue)}
-                style={styles.datePicker}
-              >
-                {months.map((month) => (
-                  <Picker.Item key={month} label={month} value={month} />
-                ))}
-              </Picker>
-
-              {/* Day Picker */}
-              <Picker
-                selectedValue={selectedDay}
-                onValueChange={(itemValue) => setSelectedDay(itemValue)}
-                style={styles.datePicker}
-              >
-                {days.map((day) => (
-                  <Picker.Item key={day} label={day} value={day} />
-                ))}
-              </Picker>
+            {/* Form Fields */}
+            <View style={styles.div}>
+              <Text style={styles.label}>Name:</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter full name"
+              />
             </View>
-          </View>
 
-          <View style={styles.div}>
-            <Text style={styles.label}>Cell:</Text>
-            <TextInput
-              style={styles.input}
-              value={cellNo}
-              onChangeText={setCellNo}
-              placeholder="Enter cell phone number"
-              keyboardType="phone-pad"
-            />
-          </View>
+            <View style={styles.div}>
+              <Text style={styles.label}>ID No:</Text>
+              <TextInput
+                style={styles.input}
+                value={idNo}
+                onChangeText={setIdNo}
+                placeholder="Enter ID number"
+                keyboardType="numeric"
+              />
+            </View>
 
-          <View style={styles.div}>
-            <Text style={styles.label}>Comm. Status:</Text>
-            <Picker
-              selectedValue={commStatus}
-              onValueChange={(itemValue) => setCommStatus(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select" value="" />
-              <Picker.Item label="Commissioned" value="Yes" />
-              <Picker.Item label="In Waiting" value="No" />
-            </Picker>
-          </View>
+            {/* Date of Birth Picker */}
+            <View style={styles.div}>
+              <Text style={styles.label}>Date of Birth:</Text>
+              <View style={styles.datePickerContainer}>
+                <Picker
+                  selectedValue={selectedYear}
+                  onValueChange={(itemValue) => setSelectedYear(itemValue)}
+                  style={styles.datePicker}
+                >
+                  {years.map((year) => (
+                    <Picker.Item key={year} label={year} value={year} />
+                  ))}
+                </Picker>
 
-          <View style={styles.div}>
-            <Text style={styles.label}>Commission No:</Text>
-            <TextInput
-              style={styles.input}
-              value={commissionNo}
-              onChangeText={setCommissionNo}
-              placeholder="Enter commission number"
-            />
-          </View>
+                <Picker
+                  selectedValue={selectedMonth}
+                  onValueChange={(itemValue) => setSelectedMonth(itemValue)}
+                  style={styles.datePicker}
+                >
+                  {months.map((month) => (
+                    <Picker.Item key={month} label={month} value={month} />
+                  ))}
+                </Picker>
 
-          <View style={styles.div}>
-            <Text style={styles.label}>Status:</Text>
-            <Picker
-              selectedValue={status}
-              onValueChange={(itemValue) => setStatus(itemValue)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select" value="" />
-              <Picker.Item label="Active" value="Active" />
-              <Picker.Item label="Inactive" value="Inactive" />
-            </Picker>
-          </View>
-
-          <View style={styles.div}>
-            <Text style={styles.label}>Sacraments:</Text>
-            <View style={styles.section}>
-              <View style={styles.checkboxContainer}>
-                <Checkbox
-                  value={isBaptChecked}
-                  onValueChange={setBaptChecked}
-                />
-                <Text style={styles.paragraph}>Bapt</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <Checkbox
-                  value={isConfChecked}
-                  onValueChange={setConfChecked}
-                />
-                <Text style={styles.paragraph}>Conf</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <Checkbox value={isEucChecked} onValueChange={setEucChecked} />
-                <Text style={styles.paragraph}>Euc</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <Checkbox
-                  value={isMarrChecked}
-                  onValueChange={setMarrChecked}
-                />
-                <Text style={styles.paragraph}>Marr</Text>
+                <Picker
+                  selectedValue={selectedDay}
+                  onValueChange={(itemValue) => setSelectedDay(itemValue)}
+                  style={styles.datePicker}
+                >
+                  {days.map((day) => (
+                    <Picker.Item key={day} label={day} value={day} />
+                  ))}
+                </Picker>
               </View>
             </View>
-          </View>
 
-          <View style={styles.div}>
-            <Text style={[styles.input, styles.button]} onPress={handleSubmit}>
-              Submit
-            </Text>
+            {/* Other Fields */}
+            <View style={styles.div}>
+              <Text style={styles.label}>Cell:</Text>
+              <TextInput
+                style={styles.input}
+                value={cellNo}
+                onChangeText={setCellNo}
+                placeholder="Enter cell phone number"
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.div}>
+              <Text style={styles.label}>Comm. Status:</Text>
+              <Picker
+                selectedValue={commStatus}
+                onValueChange={(itemValue) => setCommStatus(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select" value="" />
+                <Picker.Item label="Commissioned" value="Yes" />
+                <Picker.Item label="In Waiting" value="No" />
+              </Picker>
+            </View>
+
+            <View style={styles.div}>
+              <Text style={styles.label}>Commission No:</Text>
+              <TextInput
+                style={styles.input}
+                value={commissionNo}
+                onChangeText={setCommissionNo}
+                placeholder="Enter commission number"
+              />
+            </View>
+
+            <View style={styles.div}>
+              <Text style={styles.label}>Status:</Text>
+              <Picker
+                selectedValue={status}
+                onValueChange={(itemValue) => setStatus(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select" value="" />
+                <Picker.Item label="Active" value="Active" />
+                <Picker.Item label="Inactive" value="Inactive" />
+              </Picker>
+            </View>
+
+            <View style={styles.div}>
+              <Text style={styles.label}>Sacraments:</Text>
+              <View style={styles.section}>
+                <View style={styles.checkboxContainer}>
+                  <Checkbox
+                    value={isBaptChecked}
+                    onValueChange={setBaptChecked}
+                  />
+                  <Text style={styles.paragraph}>Bapt</Text>
+                </View>
+                <View style={styles.checkboxContainer}>
+                  <Checkbox
+                    value={isConfChecked}
+                    onValueChange={setConfChecked}
+                  />
+                  <Text style={styles.paragraph}>Conf</Text>
+                </View>
+                <View style={styles.checkboxContainer}>
+                  <Checkbox
+                    value={isEucChecked}
+                    onValueChange={setEucChecked}
+                  />
+                  <Text style={styles.paragraph}>Euc</Text>
+                </View>
+                <View style={styles.checkboxContainer}>
+                  <Checkbox
+                    value={isMarrChecked}
+                    onValueChange={setMarrChecked}
+                  />
+                  <Text style={styles.paragraph}>Marr</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <View style={styles.div}>
+              <TouchableOpacity
+                style={[styles.input, styles.button]}
+                onPress={handleSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text
+                    style={{
+                      color: "#fff",
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                    }}
+                  >
+                    Submit
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </MemberProvider>
   );
 };
 
