@@ -29,7 +29,7 @@ type MemberContextType = {
   members: Member[];
   singleMember: Member | null;
   fetchMembers: () => Promise<void>;
-  fetchMember: (regno: number) => Promise<void>;
+  fetchMember: (regno: number) => Promise<Member | null>;
   addMember: (newMember: Member) => Promise<void>;
   updateMember: (updatedMember: Member) => Promise<void>;
 };
@@ -41,7 +41,6 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [members, setMembers] = useState<Member[]>([]);
   const [singleMember, setSingleMember] = useState<Member | null>(null);
-  const { Regno } = useLocalSearchParams();
 
   const fetchMembers = async () => {
     try {
@@ -60,20 +59,23 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const fetchMember = async (regno: number) => {
+  const fetchMember = async (regno: number): Promise<Member | null> => {
     try {
       const response = await fetch(
         `https://sbparish.or.ke/adncmatechnical/api/parish/parish-members/${regno}`
       );
       const data = await response.json();
       if (data.status === "success" && data.data) {
-        setSingleMember(data.data);
+        setSingleMember(data.data); // Update context state
+        return data.data; // Return the fetched member
       } else {
         alert(data.message || "Failed to fetch member");
+        return null;
       }
     } catch (error) {
       console.error("Error fetching member:", error);
       alert("Failed to fetch member. Please try again.");
+      return null;
     }
   };
 
@@ -134,11 +136,8 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    fetchMembers();
-    if (Regno) {
-      fetchMember(Number(Regno));
-    }
-  }, [Regno]);
+    fetchMembers(); // Fetch all members on mount
+  }, []);
 
   return (
     <MemberContext.Provider

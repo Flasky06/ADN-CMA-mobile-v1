@@ -7,7 +7,7 @@ import {
   Pressable,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import { useMemberContext } from "../createContext/ParishMemberContext";
+import { useMemberContext } from "../../createContext/ParishMemberContext";
 import { useRouter } from "expo-router";
 
 const Register = () => {
@@ -20,7 +20,7 @@ const Register = () => {
       try {
         await fetchMembers();
       } catch (error) {
-        console.error(error);
+        // console.error(error);
         alert("Something went wrong, please try again.");
       } finally {
         setLoading(false);

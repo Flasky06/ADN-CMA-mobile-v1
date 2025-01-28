@@ -14,7 +14,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import Checkbox from "expo-checkbox";
 import { useLocalSearchParams, router } from "expo-router";
-import { useMemberContext } from "../createContext/ParishMemberContext";
+import { useMemberContext } from "../../createContext/ParishMemberContext";
 import { Ionicons } from "@expo/vector-icons";
 
 const UpdateParishMember: React.FC = () => {
@@ -38,35 +38,33 @@ const UpdateParishMember: React.FC = () => {
   const [parishes, setParishes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Date Picker State
-  const [selectedYear, setSelectedYear] = useState<string>("1950");
-  const [selectedMonth, setSelectedMonth] = useState<string>("01");
-  const [selectedDay, setSelectedDay] = useState<string>("01");
-
   // Fetch member data on mount
   useEffect(() => {
     const loadMemberData = async () => {
       if (Regno) {
         setIsLoading(true);
         try {
-          const member = await fetchMember(Number(Regno));
+          const member = await fetchMember(Number(Regno)); // Fetch member data
+          // console.log("Fetched Member Data:", member);
           if (member) {
-            setName(member.Name);
-            setIdNo(member.IdNo);
-            setDob(member.DOB);
-            setStation(member.StationCode);
-            setCellNo(member.CellNo);
-            setCommStatus(member.Commissioned);
-            setCommissionNo(member.CommissionNo);
-            setStatus(member.Status);
+            setName(member.Name || "");
+            setIdNo(member.IdNo || "");
+            setDob(member.DOB || "");
+            setStation(member.StationCode || "");
+            setCellNo(member.CellNo || "");
+            setCommStatus(member.Commissioned || "");
+            setCommissionNo(member.CommissionNo || "");
+            setStatus(member.Status || "");
             setBaptChecked(member.Bapt === "Yes");
             setConfChecked(member.Conf === "Yes");
             setEucChecked(member.Euc === "Yes");
             setMarrChecked(member.Marr === "Yes");
-            setSelectedDeanery(member.DeanCode);
+            setSelectedDeanery(member.DeanCode || "");
+          } else {
+            Alert.alert("Error", "Member not found.");
           }
         } catch (error) {
-          console.error("Error loading member data:", error);
+          // console.error("Error loading member data:", error);
           Alert.alert("Error", "Failed to load member data.");
         } finally {
           setIsLoading(false);
@@ -116,7 +114,7 @@ const UpdateParishMember: React.FC = () => {
         },
       ]);
     } catch (error) {
-      console.error("Error updating member:", error);
+      // console.error("Error updating member:", error);
       Alert.alert("Error", "Failed to update member. Please try again.");
     } finally {
       setIsLoading(false);

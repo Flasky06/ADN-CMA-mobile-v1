@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import { router } from "expo-router";
-import { AuthContext } from "../createContext/AuthContext";
+import { AuthContext } from "../../createContext/AuthContext";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState<string>("");

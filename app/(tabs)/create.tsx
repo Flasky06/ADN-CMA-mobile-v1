@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Checkbox from "expo-checkbox";
-import { MemberProvider } from "../createContext/ParishMemberContext";
+import { MemberProvider } from "../../createContext/ParishMemberContext";
 
 const Create: React.FC = () => {
   const [name, setName] = useState<string>("");
@@ -81,7 +81,7 @@ const Create: React.FC = () => {
           setDeaneries(data.data);
         }
       } catch (error) {
-        console.error("Error fetching deaneries:", error);
+        // console.error("Error fetching deaneries:", error);
         Alert.alert("Error", "Failed to fetch deaneries. Please try again.");
       }
     };
@@ -108,7 +108,7 @@ const Create: React.FC = () => {
             setParishes(data.data);
           }
         } catch (error) {
-          console.error("Error fetching parishes:", error);
+          // console.error("Error fetching parishes:", error);
           Alert.alert("Error", "Failed to fetch parishes. Please try again.");
         }
       };
@@ -182,7 +182,7 @@ const Create: React.FC = () => {
         Alert.alert("Error", data.message || "Failed to register member.");
       }
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);

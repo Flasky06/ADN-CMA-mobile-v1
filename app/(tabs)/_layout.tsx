@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { MemberProvider } from "../createContext/ParishMemberContext";
+import { MemberProvider } from "@/createContext/ParishMemberContext";
 
 const TabLayout = () => {
   return (
@@ -44,17 +44,6 @@ const TabLayout = () => {
             headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <MaterialIcons name="list" size={size} color={color} />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="logout"
-          options={{
-            title: "logout",
-            headerShown: false,
-            tabBarIcon: ({ color, size }) => (
-              <MaterialIcons name="person" size={size} color={color} />
             ),
           }}
         />

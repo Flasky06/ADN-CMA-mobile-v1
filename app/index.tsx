@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { cmaLogo } from "@/constants/assets";
-import { AuthContext, AuthProvider } from "./createContext/AuthContext";
+import { AuthContext, AuthProvider } from "../createContext/AuthContext";
 
 const App = () => {
   const { authData } = useContext(AuthContext);

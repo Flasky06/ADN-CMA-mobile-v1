@@ -1,6 +1,6 @@
 import React from "react";
 import { Stack } from "expo-router";
-import { MemberProvider } from "../createContext/ParishMemberContext";
+import { MemberProvider } from "@/createContext/ParishMemberContext";
 
 const UpdateLayout = () => {
   return (
