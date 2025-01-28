@@ -4,29 +4,31 @@ import {
   View,
   FlatList,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useMemberContext } from "../createContext/ParishMemberContext";
+import { useRouter } from "expo-router";
 
 const Register = () => {
-  const { members, fetchMembers } = useMemberContext(); // Access context
+  const { members, fetchMembers } = useMemberContext();
   const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
 
-  // Fetch data from the API using the context
   useEffect(() => {
     const loadData = async () => {
       try {
-        await fetchMembers(); // Use the fetchMembers function from context
+        await fetchMembers();
       } catch (error) {
         console.error(error);
         alert("Something went wrong, please try again.");
       } finally {
-        setLoading(false); // Stop loading once the request is finished
+        setLoading(false);
       }
     };
 
-    loadData(); // Call the function to fetch the members data
-  }, [fetchMembers]); // Dependency on fetchMembers
+    loadData();
+  }, [fetchMembers]);
 
   if (loading) {
     return (
@@ -42,7 +44,6 @@ const Register = () => {
       <Text style={styles.title}>Registered Members</Text>
 
       <View style={styles.row}>
-        <Text style={[styles.cell, styles.header]}>No</Text>
         <Text style={[styles.cell, styles.header]}>Name</Text>
         <Text style={[styles.cell, styles.header]}>RegNo</Text>
         <Text style={[styles.cell, styles.header]}>Status</Text>
@@ -56,8 +57,17 @@ const Register = () => {
         keyExtractor={(item) => item.Regno.toString()}
         renderItem={({ item, index }) => (
           <View style={styles.row}>
-            <Text style={styles.cell}>{index + 1}</Text>
-            <Text style={styles.cell}>{item.Name}</Text>
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/update/[Regno]",
+                  params: { Regno: item.Regno },
+                })
+              }
+            >
+              <Text style={[styles.cell, styles.clickable]}>{item.Name}</Text>
+            </Pressable>
+
             <Text style={styles.cell}>{item.Regno}</Text>
             <Text style={styles.cell}>{item.Status}</Text>
             <Text style={styles.cell}>{item.CellNo}</Text>
@@ -89,8 +99,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
-    borderLeftColor: "#ccc",
-    borderRightColor: "#ccc",
   },
   cell: {
     fontSize: 16,
@@ -103,5 +111,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     color: "#fff",
     fontSize: 20,
+  },
+  clickable: {
+    color: "blue",
+    textDecorationLine: "underline",
   },
 });

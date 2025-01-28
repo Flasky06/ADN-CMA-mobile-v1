@@ -1,33 +1,37 @@
+import { useLocalSearchParams } from "expo-router";
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-// Define the structure for member data
 type Member = {
   Regno: number;
   Name: string;
-  IdNo: string;
-  StationCode: string;
-  Commissioned: string;
-  CommissionNo: string;
-  Status: string;
-  photo: string;
-  LithurgyStatus: string;
-  DeanCode: string;
-  Rpt: string;
-  CellNo: string;
-  Bapt: string;
-  Conf: string;
-  Euc: string;
-  Marr: string;
-  email: string;
-  parish_id: number;
-  created_at: string;
-  updated_at: string;
+  IdNo?: string;
+  StationCode?: string;
+  Commissioned?: string;
+  CommissionNo?: string;
+  Status?: string;
+  photo?: string;
+  LithurgyStatus?: string;
+  DeanCode?: string;
+  DOB?: any;
+  Rpt?: string;
+  CellNo?: string;
+  Bapt?: string;
+  Conf?: string;
+  Euc?: string;
+  Marr?: string;
+  email?: string;
+  parish_id?: number;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type MemberContextType = {
   members: Member[];
+  singleMember: Member | null;
   fetchMembers: () => Promise<void>;
+  fetchMember: (regno: number) => Promise<void>;
   addMember: (newMember: Member) => Promise<void>;
+  updateMember: (updatedMember: Member) => Promise<void>;
 };
 
 const MemberContext = createContext<MemberContextType | undefined>(undefined);
@@ -36,6 +40,8 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [members, setMembers] = useState<Member[]>([]);
+  const [singleMember, setSingleMember] = useState<Member | null>(null);
+  const { Regno } = useLocalSearchParams();
 
   const fetchMembers = async () => {
     try {
@@ -49,42 +55,102 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
         alert(data.message || "Failed to fetch members");
       }
     } catch (error) {
-      console.error(error);
-      alert("Something went wrong while fetching members.");
+      console.error("Error fetching members:", error);
+      alert("Failed to fetch members. Please check your network connection.");
+    }
+  };
+
+  const fetchMember = async (regno: number) => {
+    try {
+      const response = await fetch(
+        `https://sbparish.or.ke/adncmatechnical/api/parish/parish-members/${regno}`
+      );
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        setSingleMember(data.data);
+      } else {
+        alert(data.message || "Failed to fetch member");
+      }
+    } catch (error) {
+      console.error("Error fetching member:", error);
+      alert("Failed to fetch member. Please try again.");
     }
   };
 
   const addMember = async (newMember: Member) => {
+    setMembers((prev) => [...prev, newMember]); // Optimistic update
     try {
       const response = await fetch(
         "https://sbparish.or.ke/adncmatechnical/api/parish/parish-members",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newMember),
         }
       );
-
       const data = await response.json();
-      if (response.ok && data.status === "success") {
-        setMembers((prev) => [...prev, newMember]);
-      } else {
-        alert(data.message || "Failed to add the member");
+      if (!response.ok || data.status !== "success") {
+        throw new Error(data.message || "Failed to add the member");
       }
     } catch (error) {
-      console.error(error);
-      alert("Something went wrong while adding the member.");
+      console.error("Error adding member:", error);
+      setMembers((prev) => prev.filter((m) => m.Regno !== newMember.Regno)); // Revert on error
+      alert("Failed to add the member. Please try again.");
+    }
+  };
+
+  const updateMember = async (updatedMember: Member) => {
+    if (!updatedMember.Regno) {
+      console.warn("No Regno provided to update the member.");
+      return;
+    }
+    setMembers((prev) =>
+      prev.map((member) =>
+        member.Regno === updatedMember.Regno ? updatedMember : member
+      )
+    ); // Optimistic update
+    try {
+      const response = await fetch(
+        `https://sbparish.or.ke/adncmatechnical/api/parish/parish-members/${updatedMember.Regno}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedMember),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok || data.status !== "success") {
+        throw new Error(data.message || "Failed to update the member");
+      }
+    } catch (error) {
+      console.error("Error updating member:", error);
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.Regno === updatedMember.Regno ? singleMember! : member
+        )
+      ); // Revert on error
+      alert("Failed to update the member. Please try again.");
     }
   };
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+    if (Regno) {
+      fetchMember(Number(Regno));
+    }
+  }, [Regno]);
 
   return (
-    <MemberContext.Provider value={{ members, fetchMembers, addMember }}>
+    <MemberContext.Provider
+      value={{
+        members,
+        singleMember,
+        fetchMembers,
+        fetchMember,
+        addMember,
+        updateMember,
+      }}
+    >
       {children}
     </MemberContext.Provider>
   );

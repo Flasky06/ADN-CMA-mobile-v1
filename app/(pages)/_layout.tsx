@@ -23,6 +23,7 @@ const PageLayout = () => {
         <Stack.Screen name="passportupload" options={{ headerShown: false }} />
         <Stack.Screen name="viewpassports" options={{ headerShown: false }} />
         <Stack.Screen name="editProfile" options={{ headerShown: false }} />
+        <Stack.Screen name="[id]" options={{ headerShown: false }} />
 
         <StatusBar
           barStyle="light-content"
