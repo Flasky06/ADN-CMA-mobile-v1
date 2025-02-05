@@ -47,6 +47,17 @@ const TabLayout = () => {
             ),
           }}
         />
+
+        <Tabs.Screen
+          name="registerPdf"
+          options={{
+            title: "Download Register",
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <MaterialIcons name="table-chart" size={size} color={color} />
+            ),
+          }}
+        />
       </Tabs>
     </MemberProvider>
   );
@@ -56,9 +67,9 @@ export default TabLayout;
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#00cccc", // Fixed color code
+    backgroundColor: "#00cccc",
     borderTopWidth: 1,
     borderTopColor: "#00cccc",
-    height: 60, // Adjusted height
+    height: 60,
   },
 });

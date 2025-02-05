@@ -12,7 +12,8 @@ type User = {
 
 // Define the shape of the authentication data
 type AuthData = {
-  token: string;
+  token?: string;
+  user?: User;
 };
 
 // Define the shape of the context
@@ -91,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     try {
-      setLoading(true);
+      setLoading(true); // Start loading while fetching profile
       const response = await axios.get<{ data: { user: User } }>(
         "https://sbparish.or.ke/adncmatechnical/api/user",
         {
@@ -103,22 +104,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const userData = response.data.data.user;
       setAuthData((prevData) => ({
-        ...prevData!,
+        ...prevData,
         user: userData,
       }));
-      setError(null);
+      setError(null); // Clear any previous errors
     } catch (error) {
       console.error("Failed to fetch user profile:", error);
-      if (axios.isAxiosError(error)) {
-        setError(
-          error.response?.data?.message || "Failed to fetch user profile."
-        );
-      } else {
-        setError("An unexpected error occurred.");
-      }
+      setError("Failed to fetch user profile.");
+      // Handle error (e.g., log out the user)
       updateAuthData(null);
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading when done
     }
   };
 
@@ -127,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await SecureStore.deleteItemAsync("authData");
       setAuthData(null);
-      setError(null);
+      setError(null); // Clear any errors on logout
     } catch (error) {
       console.error("Failed to logout:", error);
       setError("Failed to logout.");
@@ -150,6 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+// Custom hook to use the AuthContext
 export const useAuth = () => {
   return useContext(AuthContext);
 };

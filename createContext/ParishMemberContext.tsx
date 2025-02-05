@@ -6,6 +6,7 @@ type Member = {
   Name: string;
   IdNo?: string;
   StationCode?: string;
+  ParishCode?: string;
   Commissioned?: string;
   CommissionNo?: string;
   Status?: string;
@@ -125,7 +126,11 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error(data.message || "Failed to update the member");
       }
     } catch (error) {
-      console.error("Error updating member:", error);
+      if (error instanceof Error) {
+        console.error("Error updating member:", error.message);
+      } else {
+        console.error("Unknown error occurred:", error);
+      }
       setMembers((prev) =>
         prev.map((member) =>
           member.Regno === updatedMember.Regno ? singleMember! : member

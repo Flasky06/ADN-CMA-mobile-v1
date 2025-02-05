@@ -10,12 +10,14 @@ import {
   Alert,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Checkbox from "expo-checkbox";
 import { useLocalSearchParams, router } from "expo-router";
 import { useMemberContext } from "../../createContext/ParishMemberContext";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 
 const UpdateParishMember: React.FC = () => {
   const { Regno } = useLocalSearchParams();
@@ -33,10 +35,12 @@ const UpdateParishMember: React.FC = () => {
   const [isConfChecked, setConfChecked] = useState<boolean>(false);
   const [isEucChecked, setEucChecked] = useState<boolean>(false);
   const [isMarrChecked, setMarrChecked] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>(""); // New state for email
   const [deaneries, setDeaneries] = useState<any[]>([]);
   const [selectedDeanery, setSelectedDeanery] = useState<string>("");
   const [parishes, setParishes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [photo, setPhoto] = useState<string | null>(null); // For storing photo URL
 
   // Fetch member data on mount
   useEffect(() => {
@@ -44,8 +48,7 @@ const UpdateParishMember: React.FC = () => {
       if (Regno) {
         setIsLoading(true);
         try {
-          const member = await fetchMember(Number(Regno)); // Fetch member data
-          // console.log("Fetched Member Data:", member);
+          const member = await fetchMember(Number(Regno));
           if (member) {
             setName(member.Name || "");
             setIdNo(member.IdNo || "");
@@ -60,11 +63,12 @@ const UpdateParishMember: React.FC = () => {
             setEucChecked(member.Euc === "Yes");
             setMarrChecked(member.Marr === "Yes");
             setSelectedDeanery(member.DeanCode || "");
+            setPhoto(member.photo || null);
+            setEmail(member.email || "");
           } else {
             Alert.alert("Error", "Member not found.");
           }
         } catch (error) {
-          // console.error("Error loading member data:", error);
           Alert.alert("Error", "Failed to load member data.");
         } finally {
           setIsLoading(false);
@@ -75,9 +79,22 @@ const UpdateParishMember: React.FC = () => {
     loadMemberData();
   }, [Regno]);
 
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setPhoto(result.assets[0].uri);
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async () => {
-    if (!name || !idNo || !cellNo) {
+    if (!name || !idNo || !cellNo || !email) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
@@ -91,7 +108,7 @@ const UpdateParishMember: React.FC = () => {
       Commissioned: commStatus,
       CommissionNo: commissionNo,
       Status: status,
-      photo: "http://example.com/photo5.jpg",
+      photo,
       LithurgyStatus: "Completed",
       DeanCode: selectedDeanery,
       Rpt: "Report005",
@@ -100,7 +117,7 @@ const UpdateParishMember: React.FC = () => {
       Conf: isConfChecked ? "Yes" : "No",
       Euc: isEucChecked ? "Yes" : "No",
       Marr: isMarrChecked ? "Yes" : "No",
-      email: "test@example.com",
+      email,
       parish_id: 6,
     };
 
@@ -114,7 +131,6 @@ const UpdateParishMember: React.FC = () => {
         },
       ]);
     } catch (error) {
-      // console.error("Error updating member:", error);
       Alert.alert("Error", "Failed to update member. Please try again.");
     } finally {
       setIsLoading(false);
@@ -125,10 +141,9 @@ const UpdateParishMember: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <StatusBar barStyle="dark-content" backgroundColor="#0cc" translucent />
-        {/* Back Arrow */}
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()} // Navigate back
+          onPress={() => router.back()}
         >
           <Ionicons name="arrow-back" size={24} color="#0ccc" />
         </TouchableOpacity>
@@ -158,6 +173,16 @@ const UpdateParishMember: React.FC = () => {
           </View>
 
           <View style={styles.div}>
+            <Text style={styles.label}>DOB:</Text>
+            <TextInput
+              style={styles.input}
+              value={dob}
+              onChangeText={setDob}
+              placeholder="Enter date of birth (YYYY-MM-DD)"
+            />
+          </View>
+
+          <View style={styles.div}>
             <Text style={styles.label}>Cell:</Text>
             <TextInput
               style={styles.input}
@@ -168,7 +193,28 @@ const UpdateParishMember: React.FC = () => {
             />
           </View>
 
-          {/* Other Fields */}
+          <View style={styles.div}>
+            <Text style={styles.label}>Email:</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter email address"
+              keyboardType="email-address"
+            />
+          </View>
+
+          {/* Upload Photo */}
+          <View style={styles.div}>
+            <Text style={styles.label}>Profile Photo:</Text>
+            <TouchableOpacity onPress={handlePickImage} style={styles.button}>
+              <Text style={styles.buttonText}>Pick Image</Text>
+            </TouchableOpacity>
+
+            {photo && <Image source={{ uri: photo }} style={styles.photo} />}
+          </View>
+
+          {/* Commission Status */}
           <View style={styles.div}>
             <Text style={styles.label}>Comm. Status:</Text>
             <Picker
@@ -182,16 +228,7 @@ const UpdateParishMember: React.FC = () => {
             </Picker>
           </View>
 
-          <View style={styles.div}>
-            <Text style={styles.label}>Commission No:</Text>
-            <TextInput
-              style={styles.input}
-              value={commissionNo}
-              onChangeText={setCommissionNo}
-              placeholder="Enter commission number"
-            />
-          </View>
-
+          {/* Status */}
           <View style={styles.div}>
             <Text style={styles.label}>Status:</Text>
             <Picker
@@ -205,35 +242,40 @@ const UpdateParishMember: React.FC = () => {
             </Picker>
           </View>
 
-          {/* Sacraments Checkboxes */}
+          {/* Sacraments */}
           <View style={styles.div}>
             <Text style={styles.label}>Sacraments:</Text>
-            <View style={styles.section}>
-              <View style={styles.checkboxContainer}>
-                <Checkbox
-                  value={isBaptChecked}
-                  onValueChange={setBaptChecked}
-                />
-                <Text style={styles.paragraph}>Bapt</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <Checkbox
-                  value={isConfChecked}
-                  onValueChange={setConfChecked}
-                />
-                <Text style={styles.paragraph}>Conf</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <Checkbox value={isEucChecked} onValueChange={setEucChecked} />
-                <Text style={styles.paragraph}>Euc</Text>
-              </View>
-              <View style={styles.checkboxContainer}>
-                <Checkbox
-                  value={isMarrChecked}
-                  onValueChange={setMarrChecked}
-                />
-                <Text style={styles.paragraph}>Marr</Text>
-              </View>
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                value={isBaptChecked}
+                onValueChange={setBaptChecked}
+                color={isBaptChecked ? "#0ccc" : undefined}
+              />
+              <Text style={styles.checkboxLabel}>Baptism</Text>
+            </View>
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                value={isConfChecked}
+                onValueChange={setConfChecked}
+                color={isConfChecked ? "#0ccc" : undefined}
+              />
+              <Text style={styles.checkboxLabel}>Confirmation</Text>
+            </View>
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                value={isEucChecked}
+                onValueChange={setEucChecked}
+                color={isEucChecked ? "#0ccc" : undefined}
+              />
+              <Text style={styles.checkboxLabel}>Eucharist</Text>
+            </View>
+            <View style={styles.checkboxContainer}>
+              <Checkbox
+                value={isMarrChecked}
+                onValueChange={setMarrChecked}
+                color={isMarrChecked ? "#0ccc" : undefined}
+              />
+              <Text style={styles.checkboxLabel}>Marriage</Text>
             </View>
           </View>
 
@@ -247,16 +289,7 @@ const UpdateParishMember: React.FC = () => {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text
-                  style={{
-                    color: "#fff",
-                    fontSize: 20,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                  }}
-                >
-                  Update
-                </Text>
+                <Text style={styles.buttonText}>Update</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -315,20 +348,6 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     paddingHorizontal: 10,
   },
-  section: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  checkboxContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 30,
-    padding: 4,
-  },
-  paragraph: {
-    marginLeft: 6,
-    fontSize: 18,
-  },
   button: {
     textAlign: "center",
     backgroundColor: "#0ccc",
@@ -338,10 +357,29 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
   },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+  },
+  photo: {
+    width: 100,
+    height: 100,
+    borderRadius: 5,
+    marginTop: 10,
+  },
   backButton: {
     position: "absolute",
     top: 40,
     left: 16,
     zIndex: 1,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 16,
   },
 });

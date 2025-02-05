@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React from "react";
 import {
   StyleSheet,
   Text,
@@ -10,18 +10,17 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { cmaLogo } from "@/constants/assets";
-import { AuthContext, AuthProvider } from "../createContext/AuthContext";
+import { AuthProvider } from "@/createContext/AuthContext";
+import { themeStyles } from "@/constants/Colors";
 
 const App = () => {
-  const { authData } = useContext(AuthContext);
-
   return (
     <AuthProvider>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={themeStyles.safeArea}>
         <StatusBar
           barStyle="dark-content"
           backgroundColor="#0cc"
-          translucent={true}
+          translucent={false}
         />
         <View style={styles.container}>
           <Image source={cmaLogo} style={styles.logo} />
@@ -40,10 +39,6 @@ const App = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#fff", // White background
-  },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -63,13 +58,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    color: "#0ccc",
+    color: themeStyles.themeColor,
     fontSize: 24,
     textAlign: "center",
     marginBottom: 16,
   },
   button: {
-    backgroundColor: "#0ccc",
+    backgroundColor: themeStyles.themeColor,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 54,

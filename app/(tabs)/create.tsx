@@ -10,10 +10,19 @@ import {
   Alert,
   TouchableOpacity,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Checkbox from "expo-checkbox";
+import * as ImagePicker from "expo-image-picker";
 import { MemberProvider } from "../../createContext/ParishMemberContext";
+import { router } from "expo-router";
+
+type PhotoType = {
+  uri: string;
+  filename: string;
+  type: string;
+} | null;
 
 const Create: React.FC = () => {
   const [name, setName] = useState<string>("");
@@ -32,8 +41,7 @@ const Create: React.FC = () => {
   const [selectedDeanery, setSelectedDeanery] = useState<string>("");
   const [parishes, setParishes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  // Date Picker State
+  const [photo, setPhoto] = useState<PhotoType>(null);
   const [selectedYear, setSelectedYear] = useState<string>("1950");
   const [selectedMonth, setSelectedMonth] = useState<string>("01");
   const [selectedDay, setSelectedDay] = useState<string>("01");
@@ -81,7 +89,6 @@ const Create: React.FC = () => {
           setDeaneries(data.data);
         }
       } catch (error) {
-        // console.error("Error fetching deaneries:", error);
         Alert.alert("Error", "Failed to fetch deaneries. Please try again.");
       }
     };
@@ -108,7 +115,6 @@ const Create: React.FC = () => {
             setParishes(data.data);
           }
         } catch (error) {
-          // console.error("Error fetching parishes:", error);
           Alert.alert("Error", "Failed to fetch parishes. Please try again.");
         }
       };
@@ -119,44 +125,105 @@ const Create: React.FC = () => {
     }
   }, [selectedDeanery]);
 
+  // Image Picker
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: "images",
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      console.log("asset", asset);
+      setPhoto({
+        uri: asset.uri as string,
+        filename: asset.fileName || `photo_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
+      });
+    }
+  };
+
   const handleSubmit = async () => {
     if (!name || !idNo || !cellNo) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
-    const payload = {
-      Name: name,
-      IdNo: idNo,
-      DOB: dob,
-      ParishCode: "P005",
-      StationCode: station,
-      Commissioned: commStatus,
-      CommissionNo: commissionNo,
-      Status: status,
-      photo: "http://example.com/photo5.jpg",
-      LithurgyStatus: "Completed",
-      DeanCode: "D005",
-      Rpt: "Report005",
-      CellNo: cellNo,
-      Bapt: isBaptChecked ? "Yes" : "No",
-      Conf: isConfChecked ? "Yes" : "No",
-      Euc: isEucChecked ? "Yes" : "No",
-      Marr: isMarrChecked ? "Yes" : "No",
-      email: "test@example.com",
-      parish_id: 6,
-    };
-
     setIsLoading(true);
+
     try {
+      let photoUrl = "";
+
+      // Upload to Cloudinary if photo exists
+      if (photo) {
+        const cloudinaryFormData = new FormData();
+        cloudinaryFormData.append("file", {
+          uri: photo.uri,
+          name: photo.filename || `photo_${Date.now()}.jpg`,
+          type: photo.type || "image/jpeg",
+        });
+        cloudinaryFormData.append("upload_preset", "adncmatechnical"); // Replace with your preset
+        cloudinaryFormData.append("api_key", "774767986364867");
+        cloudinaryFormData.append("cloud_name", "dynok9pj5");
+
+        const cloudinaryResponse = await fetch(
+          "https://api.cloudinary.com/v1_1/dynok9pj5/image/upload",
+          {
+            method: "POST",
+            body: cloudinaryFormData,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (!cloudinaryResponse.ok) {
+          throw new Error("Failed to upload image to Cloudinary");
+        }
+
+        const cloudinaryData = await cloudinaryResponse.json();
+        photoUrl = cloudinaryData.secure_url;
+        console.log("photoUrl", photoUrl);
+      }
+
+      // Prepare form data for your backend
+      const formData = new FormData();
+
+      formData.append("Name", name);
+      formData.append("IdNo", idNo);
+      formData.append("DOB", dob);
+      formData.append("ParishCode", "P005");
+      formData.append("StationCode", station || "");
+      formData.append("Commissioned", commStatus || "");
+      formData.append("CommissionNo", commissionNo || "");
+      formData.append("Status", status || "");
+      formData.append("LithurgyStatus", "Completed");
+      formData.append("DeanCode", "D005");
+      formData.append("Rpt", "Report005");
+      formData.append("CellNo", cellNo);
+      formData.append("Bapt", isBaptChecked ? "Yes" : "No");
+      formData.append("Conf", isConfChecked ? "Yes" : "No");
+      formData.append("Euc", isEucChecked ? "Yes" : "No");
+      formData.append("Marr", isMarrChecked ? "Yes" : "No");
+      formData.append("email", "member@example.com");
+      formData.append("parish_id", "6");
+
+      // Add Cloudinary URL if available
+      if (photoUrl) {
+        formData.append("photo", photoUrl);
+      }
+
+      // Send data to your backend
       const response = await fetch(
         "https://sbparish.or.ke/adncmatechnical/api/parish/parish-members",
         {
           method: "POST",
+          body: formData,
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "multipart/form-data",
           },
-          body: JSON.stringify(payload),
         }
       );
 
@@ -165,25 +232,13 @@ const Create: React.FC = () => {
 
       if (response.ok && data.status === "success") {
         Alert.alert("Success", "Parish member created successfully!");
-        // Reset the form
-        setName("");
-        setIdNo("");
-        setDob("");
-        setStation("");
-        setCellNo("");
-        setCommStatus("");
-        setCommissionNo("");
-        setStatus("");
-        setBaptChecked(false);
-        setConfChecked(false);
-        setEucChecked(false);
-        setMarrChecked(false);
+        router.replace("/register");
       } else {
         Alert.alert("Error", data.message || "Failed to register member.");
       }
     } catch (error) {
-      // console.error(error);
       Alert.alert("Error", "Something went wrong. Please try again.");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -381,7 +436,21 @@ const Create: React.FC = () => {
               </View>
             </View>
 
-            {/* Submit Button */}
+            {/* Photo Upload */}
+            <View style={styles.div}>
+              <Text style={styles.label}>Photo:</Text>
+              <TouchableOpacity style={styles.button} onPress={pickImage}>
+                <Text style={styles.buttonText}>Pick an image</Text>
+              </TouchableOpacity>
+              {photo && (
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={styles.imagePreview}
+                />
+              )}
+            </View>
+
+            {/* Submit Button  */}
             <View style={styles.div}>
               <TouchableOpacity
                 style={[styles.input, styles.button]}
@@ -490,5 +559,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     fontSize: 20,
     fontWeight: "bold",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  imagePreview: {
+    width: 100,
+    height: 100,
+    marginTop: 10,
+    borderRadius: 5,
   },
 });
