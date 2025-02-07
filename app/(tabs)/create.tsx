@@ -437,18 +437,17 @@ const Create: React.FC = () => {
             </View>
 
             {/* Photo Upload */}
-            <View style={styles.div}>
-              <Text style={styles.label}>Photo:</Text>
-              <TouchableOpacity style={styles.button} onPress={pickImage}>
-                <Text style={styles.buttonText}>Pick an image</Text>
-              </TouchableOpacity>
-              {photo && (
+
+            <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+              {photo ? (
                 <Image
                   source={{ uri: photo.uri }}
                   style={styles.imagePreview}
                 />
+              ) : (
+                <Text style={styles.imageText}>Pick Passport Photo</Text>
               )}
-            </View>
+            </TouchableOpacity>
 
             {/* Submit Button  */}
             <View style={styles.div}>
@@ -529,6 +528,27 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     paddingHorizontal: 10,
   },
+  imagePicker: {
+    backgroundColor: "#e0e0e0",
+    borderRadius: 10,
+    height: 100,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 15,
+    width: "80%",
+    marginHorizontal: "auto",
+  },
+
+  imagePreview: {
+    width: 100,
+    height: 100,
+    marginTop: 10,
+    borderRadius: 5,
+  },
+  imageText: {
+    fontSize: 16,
+    color: "#333",
+  },
   datePickerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -565,11 +585,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
-  },
-  imagePreview: {
-    width: 100,
-    height: 100,
-    marginTop: 10,
-    borderRadius: 5,
   },
 });

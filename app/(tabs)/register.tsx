@@ -84,7 +84,7 @@ const Register = () => {
               <View style={styles.row}>
                 {/* Table headers */}
                 <Text style={[styles.cell, styles.header, styles.regNo]}>
-                  RegNo
+                  Reg No
                 </Text>
                 <Text style={[styles.cell, styles.header, styles.name]}>
                   Name
@@ -210,76 +210,80 @@ const Register = () => {
 };
 
 export default Register;
-
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
+    flex: 1, // Make SafeAreaView take up the entire screen height
     paddingTop: 10,
     paddingVertical: 15,
-    paddingHorizontal: 10,
+    paddingHorizontal: 4,
+    backgroundColor: "#fff", // Set white background color for the whole screen
   },
   container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: 40,
+    flex: 1, // Ensure the container fills the available space
+    backgroundColor: "#fff", // Set white background color
+    borderRadius: 10,
+    padding: 20,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: "bold",
-    marginVertical: 10,
+    marginVertical: 20,
     textAlign: "center",
+    color: themeStyles.themeColor,
   },
   searchArea: {
-    paddingRight: 40,
-    paddingLeft: 20,
+    marginVertical: 15,
+    paddingHorizontal: 15,
   },
   searchLabel: {
-    fontWeight: "semibold",
-    fontSize: 24,
+    fontWeight: "600",
+    fontSize: 18,
     color: themeStyles.themeColor,
-    marginVertical: 10,
+    marginBottom: 5,
   },
   searchInput: {
-    height: 40,
+    height: 45,
     borderColor: themeStyles.themeColor,
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 15,
+    paddingHorizontal: 15,
     fontSize: 16,
+    backgroundColor: "#f9f9f9",
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: "#eee",
+    alignItems: "center",
   },
   cell: {
     fontSize: 14,
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
     textAlign: "center",
     minWidth: 100,
+    color: "#333",
   },
   header: {
     fontWeight: "bold",
     backgroundColor: themeStyles.themeColor,
-    paddingVertical: 8,
+    paddingVertical: 10,
     color: "#fff",
-    fontSize: 16,
+    fontSize: 15,
+    textAlign: "center",
   },
   clickable: {
-    color: "blue",
+    color: "#007bff",
     textDecorationLine: "underline",
   },
-
   regNo: {
     minWidth: 60,
     fontWeight: "bold",
   },
   name: {
-    minWidth: 150,
+    minWidth: 120,
     textAlign: "left",
   },
   status: {
@@ -329,6 +333,7 @@ const styles = StyleSheet.create({
   },
   email: {
     minWidth: 150,
+    textAlign: "left",
   },
   parishId: {
     minWidth: 80,

@@ -14,10 +14,17 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import Checkbox from "expo-checkbox";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, router } from "expo-router";
 import { useMemberContext } from "../../createContext/ParishMemberContext";
 import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker";
+import { themeStyles } from "@/constants/Colors";
+
+type PhotoType = {
+  uri: string;
+  filename: string;
+  type: string;
+} | null;
 
 const UpdateParishMember: React.FC = () => {
   const { Regno } = useLocalSearchParams();
@@ -35,12 +42,13 @@ const UpdateParishMember: React.FC = () => {
   const [isConfChecked, setConfChecked] = useState<boolean>(false);
   const [isEucChecked, setEucChecked] = useState<boolean>(false);
   const [isMarrChecked, setMarrChecked] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>(""); // New state for email
+  const [email, setEmail] = useState<string>("");
   const [deaneries, setDeaneries] = useState<any[]>([]);
   const [selectedDeanery, setSelectedDeanery] = useState<string>("");
   const [parishes, setParishes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [photo, setPhoto] = useState<string | null>(null); // For storing photo URL
+  const [photo, setPhoto] = useState<PhotoType>(null); // Changed to PhotoType
+  const [initialPhotoUrl, setInitialPhotoUrl] = useState<string | null>(null); // Store initial photo URL
 
   // Fetch member data on mount
   useEffect(() => {
@@ -63,7 +71,14 @@ const UpdateParishMember: React.FC = () => {
             setEucChecked(member.Euc === "Yes");
             setMarrChecked(member.Marr === "Yes");
             setSelectedDeanery(member.DeanCode || "");
-            setPhoto(member.photo || null);
+            // Handle photo loading as PhotoType
+            if (member.photo) {
+              setPhoto({ uri: member.photo, filename: null, type: null }); // Or determine filename/type if available
+              setInitialPhotoUrl(member.photo); // Store initial URL for comparison
+            } else {
+              setPhoto(null);
+              setInitialPhotoUrl(null);
+            }
             setEmail(member.email || "");
           } else {
             Alert.alert("Error", "Member not found.");
@@ -81,14 +96,19 @@ const UpdateParishMember: React.FC = () => {
 
   const handlePickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: "images",
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
-    if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setPhoto({
+        uri: asset.uri as string,
+        filename: asset.fileName || `photo_${Date.now()}.jpg`,
+        type: asset.mimeType || "image/jpeg",
+      });
     }
   };
 
@@ -99,30 +119,67 @@ const UpdateParishMember: React.FC = () => {
       return;
     }
 
-    const updatedMember = {
-      Regno: Number(Regno),
-      Name: name,
-      IdNo: idNo,
-      DOB: dob,
-      StationCode: station,
-      Commissioned: commStatus,
-      CommissionNo: commissionNo,
-      Status: status,
-      photo,
-      LithurgyStatus: "Completed",
-      DeanCode: selectedDeanery,
-      Rpt: "Report005",
-      CellNo: cellNo,
-      Bapt: isBaptChecked ? "Yes" : "No",
-      Conf: isConfChecked ? "Yes" : "No",
-      Euc: isEucChecked ? "Yes" : "No",
-      Marr: isMarrChecked ? "Yes" : "No",
-      email,
-      parish_id: 6,
-    };
-
     setIsLoading(true);
+    let photoUrl = initialPhotoUrl; // Default to initial photo URL if no new photo picked
+
     try {
+      // Upload to Cloudinary if a new photo is selected
+      if (photo && photo.uri && photo.uri !== initialPhotoUrl) {
+        // Compare URI to detect new image
+        const cloudinaryFormData = new FormData();
+        cloudinaryFormData.append("file", {
+          uri: photo.uri,
+          name: photo.filename || `photo_${Date.now()}.jpg`,
+          type: photo.type || "image/jpeg",
+        });
+        cloudinaryFormData.append("upload_preset", "adncmatechnical"); // Replace with your preset
+        cloudinaryFormData.append("api_key", "774767986364867");
+        cloudinaryFormData.append("cloud_name", "dynok9pj5");
+
+        const cloudinaryResponse = await fetch(
+          "https://api.cloudinary.com/v1_1/dynok9pj5/image/upload",
+          {
+            method: "POST",
+            body: cloudinaryFormData,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (!cloudinaryResponse.ok) {
+          throw new Error("Failed to upload image to Cloudinary");
+        }
+
+        const cloudinaryData = await cloudinaryResponse.json();
+        photoUrl = cloudinaryData.secure_url;
+        console.log("Updated photoUrl", photoUrl);
+      } else {
+        console.log("No new photo selected, using initial photo URL or null.");
+      }
+
+      const updatedMember = {
+        Regno: Number(Regno),
+        Name: name,
+        IdNo: idNo,
+        DOB: dob,
+        StationCode: station,
+        Commissioned: commStatus,
+        CommissionNo: commissionNo,
+        Status: status,
+        photo: photoUrl, // Use the Cloudinary URL or initial URL
+        LithurgyStatus: "Completed",
+        DeanCode: selectedDeanery,
+        Rpt: "Report005",
+        CellNo: cellNo,
+        Bapt: isBaptChecked ? "Yes" : "No",
+        Conf: isConfChecked ? "Yes" : "No",
+        Euc: isEucChecked ? "Yes" : "No",
+        Marr: isMarrChecked ? "Yes" : "No",
+        email,
+        parish_id: 6,
+      };
+
       await updateMember(updatedMember);
       Alert.alert("Success", "Member updated successfully!", [
         {
@@ -132,6 +189,7 @@ const UpdateParishMember: React.FC = () => {
       ]);
     } catch (error) {
       Alert.alert("Error", "Failed to update member. Please try again.");
+      console.error("Update Error:", error); // Log the detailed error
     } finally {
       setIsLoading(false);
     }
@@ -204,16 +262,6 @@ const UpdateParishMember: React.FC = () => {
             />
           </View>
 
-          {/* Upload Photo */}
-          <View style={styles.div}>
-            <Text style={styles.label}>Profile Photo:</Text>
-            <TouchableOpacity onPress={handlePickImage} style={styles.button}>
-              <Text style={styles.buttonText}>Pick Image</Text>
-            </TouchableOpacity>
-
-            {photo && <Image source={{ uri: photo }} style={styles.photo} />}
-          </View>
-
           {/* Commission Status */}
           <View style={styles.div}>
             <Text style={styles.label}>Comm. Status:</Text>
@@ -243,8 +291,9 @@ const UpdateParishMember: React.FC = () => {
           </View>
 
           {/* Sacraments */}
-          <View style={styles.div}>
-            <Text style={styles.label}>Sacraments:</Text>
+          <Text style={styles.label}>Sacraments:</Text>
+
+          <View style={styles.divc}>
             <View style={styles.checkboxContainer}>
               <Checkbox
                 value={isBaptChecked}
@@ -279,6 +328,18 @@ const UpdateParishMember: React.FC = () => {
             </View>
           </View>
 
+          {/* Upload Photo */}
+          <View style={styles.div}>
+            <Text style={styles.label}>Profile Photo:</Text>
+            <TouchableOpacity onPress={handlePickImage} style={styles.button}>
+              <Text style={styles.buttonText}>Update Passport Photo</Text>
+            </TouchableOpacity>
+
+            {photo && photo.uri && (
+              <Image source={{ uri: photo.uri }} style={styles.photo} />
+            )}
+          </View>
+
           {/* Submit Button */}
           <View style={styles.div}>
             <TouchableOpacity
@@ -289,7 +350,16 @@ const UpdateParishMember: React.FC = () => {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Update</Text>
+                <Text
+                  style={{
+                    color: "#fff",
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
+                >
+                  Update
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -300,7 +370,6 @@ const UpdateParishMember: React.FC = () => {
 };
 
 export default UpdateParishMember;
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -308,64 +377,86 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   scrollContainer: {
-    alignItems: "stretch",
     paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   div: {
     marginBottom: 20,
     width: "100%",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginTop: 60,
+  divc: {
     marginBottom: 20,
-    color: "#0ccc",
+    width: "100%",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  title: {
+    fontSize: 26,
+    fontWeight: "600",
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 20,
+    color: "#333",
   },
   label: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "400",
     marginBottom: 8,
+    color: "#333",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    borderRadius: 5,
+    borderColor: "#ddd",
+    padding: 14,
+    borderRadius: 6,
     fontSize: 16,
     width: "100%",
+    backgroundColor: "#f7f7f7",
+    marginBottom: 12,
   },
   picker: {
     height: 50,
     width: "100%",
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
+    backgroundColor: "#f7f7f7",
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#ccc",
-    paddingHorizontal: 10,
+    borderColor: "#ddd",
+    paddingHorizontal: 14,
+    marginBottom: 12,
   },
   button: {
     textAlign: "center",
-    backgroundColor: "#0ccc",
+    backgroundColor: themeStyles.themeColor,
     color: "#fff",
-    paddingVertical: 10,
-    borderRadius: 5,
-    fontSize: 20,
-    fontWeight: "bold",
+    paddingVertical: 14,
+    borderRadius: 6,
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 20,
+    width: "80%",
+    marginHorizontal: "auto",
   },
   buttonText: {
     color: "#fff",
     fontSize: 18,
+    fontWeight: "600",
+    textAlign: "center",
   },
   photo: {
     width: 100,
     height: 100,
-    borderRadius: 5,
-    marginTop: 10,
+    borderRadius: 50,
+    marginTop: 15,
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: themeStyles.themeColor,
+    marginHorizontal: "auto",
   },
   backButton: {
     position: "absolute",
@@ -376,10 +467,11 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
   checkboxLabel: {
-    marginLeft: 8,
+    marginLeft: 10,
     fontSize: 16,
+    color: "#333",
   },
 });
