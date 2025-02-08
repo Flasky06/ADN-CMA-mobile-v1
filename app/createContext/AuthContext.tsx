@@ -10,7 +10,7 @@ type User = {
   role?: string;
 };
 
-// Define the shape of the authentication data
+// Define the shape of the Auth Data
 type AuthData = {
   token?: string;
   user?: User;

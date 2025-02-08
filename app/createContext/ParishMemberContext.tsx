@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
-// Define the structure for member data
 type Member = {
   Regno: number;
   Name: string;
@@ -90,6 +89,44 @@ export const MemberProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+// Add updateMember function
+const updateMember = async (updatedMember: Member) => {
+  try {
+    const response = await fetch(
+      `https://sbparish.or.ke/adncmatechnical/api/parish/parish-members/${updatedMember.Regno}`, // Use Regno from updatedMember
+      {
+        method: "PUT", // Or PATCH, depending on your API documentation
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedMember),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error("Update failed, HTTP status:", response.status);
+      console.error("Response data:", data); // Log response data for more details
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    if (data.status === "success") {
+      setMembers((prevMembers) =>
+        prevMembers.map((member) =>
+          member.Regno === updatedMember.Regno ? updatedMember : member
+        )
+      );
+    } else {
+      console.error("Update failed, API status:", data.status);
+      console.error("API message:", data.message);
+      throw new Error(data.message || "Failed to update the member");
+    }
+  } catch (error) {
+    console.error("Error in updateMember function:", error);
+    throw error;
+  }
+};
+
 export const useMemberContext = () => {
   const context = useContext(MemberContext);
   if (!context) {
@@ -97,3 +134,6 @@ export const useMemberContext = () => {
   }
   return context;
 };
+function setMembers(arg0: (prevMembers: any) => any) {
+  throw new Error("Function not implemented.");
+}
